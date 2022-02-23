@@ -1,17 +1,17 @@
-import React, { createContext, useContext, useEffect, useReducer,useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useRef, useState } from 'react';
 
 
 const HOST_API = "http://localhost:8080/api"
 
 const initialState = {
-	list: []
+  list: []
 };
 const Store = createContext(initialState);
 const Form = () => {
- 
- const formRef = useRef(null);
-  const [dispatch] = useContext(Store);
-  const [state,setState]=useState();
+
+  const formRef = useRef(null);
+  const {dispatch} = useContext(Store);
+  const [state, setState] = useState();
 
   const onAdd = (event) => {
     event.preventDefault();
@@ -32,7 +32,7 @@ const Form = () => {
       .then((response) => response.json())
       .then((todo) => {
         dispatch({ type: "add-item", item: todo });
-        setState({ name: ""});
+        setState({ name: "" });
         formRef.current.reset();
       });
   };
@@ -52,7 +52,7 @@ const Form = () => {
 
 const List = () => { //para listar toda la informacion
   const { state, dispatch } = useContext(Store);
- // const [ dispatch, state ] = useContext(Store); //creo store como contexto
+  // const [ dispatch, state ] = useContext(Store); //creo store como contexto
   useEffect(() => {
     fetch(HOST_API + "/todos")
       .then(response => response.json())
@@ -60,10 +60,6 @@ const List = () => { //para listar toda la informacion
         dispatch({ type: "update-list", list })
       })
   }, [state.list.length, dispatch]);
-
-
-
-
   return (
     <table>
       <thead>
@@ -98,12 +94,12 @@ function reducer(state, action) {
   }
 }
 const StoreProvider = ({ children }) => {
- 
-  const [state ,dispatch] = useReducer(reducer, initialState); //creo store como contexto
 
-	return (
-		<Store.Provider value={{ state, dispatch }}>{children}</Store.Provider>
-	);
+  const [state, dispatch] = useReducer(reducer, initialState); //creo store como contexto
+
+  return (
+    <Store.Provider value={{ state, dispatch }}>{children}</Store.Provider>
+  );
 }
 
 function App() {
