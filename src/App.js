@@ -4,14 +4,15 @@ import React, { createContext, useContext, useEffect, useReducer, useRef, useSta
 const HOST_API = "http://localhost:8080/api"
 
 const initialState = {
-  list: []
+  list: [],
+  item:{}
 };
 const Store = createContext(initialState);
 const Form = () => {
 
   const formRef = useRef(null);
-  const {dispatch} = useContext(Store);
-  const [state, setState] = useState();
+  const { dispatch, state: { item } } = useContext(Store);
+  const [state, setState] = useState({ item });
 
   const onAdd = (event) => {
     event.preventDefault();
@@ -36,15 +37,39 @@ const Form = () => {
         formRef.current.reset();
       });
   };
+  const onEdit = (ev) => {
+    ev.preventDefault();
 
+    const request = {
+      name: state.name,
+      description: state.description,
+      id: item.id,
+      isComplete: item.isComplete,
+    };
+
+    fetch(HOST_API + "/todo", {
+      method: "PUT",
+      body: JSON.stringify(request),
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .then((response) => response.json())
+      .then((todo) => {
+        dispatch({ type: "update-item", item: todo });
+        setState({ name: "" });
+        formRef.current.reset();
+      });
+  };
   return (
     <form ref={formRef}>
-      <input type="text" name="name"
+      <input type="text" name="name" defaultValue={item.name}
         onChange={(event) =>
           setState({ ...state, name: event.target.value })}
       />
-      <button onClick={onAdd}>Agregar</button>
-
+      {item.id ? (
+        <button onClick={onEdit}>Actualizar</button>
+      ) : (
+        <button onClick={onAdd}>Agregar</button>
+      )}
     </form>
   );
 
@@ -60,6 +85,19 @@ const List = () => { //para listar toda la informacion
         dispatch({ type: "update-list", list })
       })
   }, [state.list.length, dispatch]);
+  
+  const onDelete = (id) => {
+    fetch(HOST_API + "/delete/" + id , {
+      method: "DELETE"
+    }).then((list) => {
+      dispatch({ type: "delete-item", id })
+    });
+  };
+
+  const onEdit = (todo) => {
+    dispatch({ type: "edit-item", item: todo });
+  };
+
   return (
     <table>
       <thead>
@@ -74,7 +112,9 @@ const List = () => { //para listar toda la informacion
           return <tr key={todo.id}>
             <td>{todo.id}</td>
             <td>{todo.name}</td>
-            <td>{todo.isComplete}</td>
+            <td>{todo.isComplete === true ? "si" : "no"}</td>
+            <td><button onClick={() => onDelete(todo.id)}>Eliminar</button></td>
+            <td><button onClick={() => onEdit(todo)}>Editar</button> </td>
           </tr>
         })}
       </tbody>
@@ -83,12 +123,25 @@ const List = () => { //para listar toda la informacion
 }
 function reducer(state, action) {
   switch (action.type) {
+    case 'update-item':
+      const listUpdateEdit = state.list.map((item) => {
+        if (item.id === action.item.id) {
+          return action.item;
+        }
+        return item;
+      });
+      return { ...state, list: listUpdateEdit, item: {} };
     case 'update-list':
       return { ...state, list: action.list }
     case 'add-item':
       const newList = state.list;
       newList.push(action.item);
       return { ...state, list: newList }
+    case 'delete-item':
+      const listUpdate = state.list.filter((item) => item.id !== action.id);
+      return { ...state, list: listUpdate };
+    case 'edit-item':
+      return { ...state, item: action.item };
     default:
       return state;
   }
